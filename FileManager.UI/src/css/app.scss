@@ -1,0 +1,30 @@
+// app global css in SCSS form
+.doc-page {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 576px) {
+  .doc-page {
+    max-width: 540px;
+  }
+}
+
+@media (min-width: 768px) {
+  .doc-page {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 992px) {
+  .doc-page {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .doc-page {
+    max-width: 1140px;
+  }
+}
