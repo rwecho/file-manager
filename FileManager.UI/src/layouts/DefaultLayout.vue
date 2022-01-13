@@ -5,7 +5,6 @@
       <q-toolbar-title> FileManager </q-toolbar-title>
       <q-tabs>
         <q-route-tab label="Home" icon="home" to="/" exact />
-        <q-route-tab label="Settings" icon="settings" to="/settings" exact />
       </q-tabs>
     </q-toolbar>
     <q-page-container>

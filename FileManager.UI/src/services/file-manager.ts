@@ -1,4 +1,5 @@
 import { api } from 'boot/axios';
+import { ensureEndWith, ensureStartWithout } from 'src/boot/string-utilities';
 
 export interface FolderDto {
   name: string;
@@ -19,6 +20,31 @@ export interface FileDto {
 }
 
 export const fileManagerService = {
+  createFolder: async (
+    folder: string,
+    subFolder: string
+  ): Promise<FolderDto> => {
+    const path = `${ensureEndWith(folder, '/')}${ensureStartWithout(
+      subFolder,
+      '/'
+    )}`;
+    const response = await api.post<FolderDto>(
+      `FileManager/CreateFolder?path=${path}`
+    );
+    return response.data;
+  },
+  getFolder: async (path: string): Promise<FolderDto> => {
+    const response = await api.get<FolderDto>(
+      `FileManager/GetFolder?path=${path}`
+    );
+    return response.data;
+  },
+  getParentFolder: async (path: string): Promise<FolderDto> => {
+    const response = await api.get<FolderDto>(
+      `FileManager/GetParentFolder?path=${path}`
+    );
+    return response.data;
+  },
   getFolders: async (path: string): Promise<FolderDto[]> => {
     const response = await api.get<FolderDto[]>(
       `FileManager/GetFolders?path=${path}`

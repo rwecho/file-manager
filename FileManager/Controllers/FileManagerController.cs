@@ -6,7 +6,7 @@ namespace FileManager.Controllers
     [Route("[controller]/[action]")]
     public class FileManagerController : ControllerBase
     {
-        [HttpGet(Name = "file")]
+        [HttpGet]
         public IActionResult GetFileAsync(string path)
         {
             path = NormailizePath(path);
@@ -16,11 +16,14 @@ namespace FileManager.Controllers
             {
                 return this.NotFound();
             }
-            return this.PhysicalFile(file, "application/octet-stream", true);
+
+            var fileName = Path.GetFileName(file);
+            return this.PhysicalFile(file, "application/octet-stream", fileName, true);
         }
 
-        [HttpGet(Name = "files")]
-        public IActionResult GetFilesAsync(string? path="")
+
+        [HttpGet]
+        public IActionResult GetFilesAsync(string? path = "")
         {
             path = NormailizePath(path);
 
@@ -41,7 +44,7 @@ namespace FileManager.Controllers
                 .Select(o => new
                 {
                     o.Name,
-                    Path = Path.GetRelativePath(PathUtilities.Uploads, o.FullName),
+                    Path = NormailizePath(Path.GetRelativePath(PathUtilities.Uploads, o.FullName)),
                     o.Length,
                     o.LastWriteTimeUtc,
                     o.CreationTimeUtc,
@@ -52,7 +55,76 @@ namespace FileManager.Controllers
             return this.Ok(dtos);
         }
 
-        [HttpGet(Name = "foldres")]
+        [HttpGet]
+        public IActionResult GetFolderAsync(string? path = "")
+        {
+            path = NormailizePath(path);
+            var directory = Path.Combine(PathUtilities.Uploads, path);
+
+            if (!Directory.Exists(directory))
+            {
+                return this.BadRequest(new
+                {
+                    Message = "路径不存在"
+                });
+            }
+
+            var directoryInfo = new DirectoryInfo(directory);
+
+            if (!IsUploadsSubFolder(directoryInfo.FullName))
+            {
+                directoryInfo = new DirectoryInfo(PathUtilities.Uploads);
+            }
+            return this.Ok(new
+            {
+                directoryInfo.Name,
+                Path = NormailizePath(Path.GetRelativePath(PathUtilities.Uploads, directoryInfo.FullName)),
+                directoryInfo.CreationTimeUtc,
+                directoryInfo.LastWriteTimeUtc,
+                directoryInfo.LastAccessTimeUtc
+            });
+        }
+
+        [HttpGet]
+        public IActionResult GetParentFolderAsync(string? path = "")
+        {
+            path = NormailizePath(path);
+            var directory = Path.Combine(PathUtilities.Uploads, path);
+
+            if (!Directory.Exists(directory))
+            {
+                return this.BadRequest(new
+                {
+                    Message = "路径不存在"
+                });
+            }
+
+            var parentDirectoryInfo = Directory.GetParent(directory)!;
+
+            if (!IsUploadsSubFolder(parentDirectoryInfo.FullName))
+            {
+                parentDirectoryInfo = new DirectoryInfo(PathUtilities.Uploads);
+            }
+
+            return this.Ok(new
+            {
+                parentDirectoryInfo.Name,
+                Path = NormailizePath(Path.GetRelativePath(PathUtilities.Uploads, parentDirectoryInfo.FullName)),
+                parentDirectoryInfo.CreationTimeUtc,
+                parentDirectoryInfo.LastWriteTimeUtc,
+                parentDirectoryInfo.LastAccessTimeUtc
+            });
+        }
+
+        private static bool IsUploadsSubFolder(string path)
+        {
+            var uploadDirectoryInfo = new DirectoryInfo(PathUtilities.Uploads);
+            var pathDirectoryInfo = new DirectoryInfo(path);
+
+            return pathDirectoryInfo.FullName.StartsWith(uploadDirectoryInfo.FullName);
+        }
+
+        [HttpGet]
         public IActionResult GetFoldersAsync(string? path = "")
         {
             path = NormailizePath(path);
@@ -67,6 +139,11 @@ namespace FileManager.Controllers
                 });
             }
 
+            if (!IsUploadsSubFolder(directory))
+            {
+                directory = PathUtilities.Uploads;
+            }
+
             var directories = Directory.GetDirectories(directory);
 
             var dtos = directories
@@ -74,7 +151,7 @@ namespace FileManager.Controllers
                 .Select(o => new
                 {
                     o.Name,
-                    Path = Path.GetRelativePath(PathUtilities.Uploads, o.FullName),
+                    Path = NormailizePath(Path.GetRelativePath(PathUtilities.Uploads, o.FullName)),
                     o.CreationTimeUtc,
                     o.LastWriteTimeUtc,
                     o.LastAccessTimeUtc
@@ -83,7 +160,26 @@ namespace FileManager.Controllers
             return this.Ok(dtos);
         }
 
-        [HttpPost(Name = "upload")]
+        [HttpPost]
+        public IActionResult CreateFolderAsync(string path)
+        {
+            path = NormailizePath(path);
+            var directory = Path.Combine(PathUtilities.Uploads, path);
+
+            if (!IsUploadsSubFolder(directory))
+            {
+                return this.BadRequest(new
+                {
+                    Message = "非法路径"
+                });
+            }
+
+            Directory.CreateDirectory(directory);
+
+            return this.GetFolderAsync(path);
+        }
+
+        [HttpPost]
         public async Task<IActionResult> UploadFileAsync(IFormFile file, string? path = "")
         {
             path = NormailizePath(path);
@@ -112,7 +208,7 @@ namespace FileManager.Controllers
         {
             if (path == null)
                 return "";
-            return path.TrimStart('/').TrimStart('\\');
+            return path.TrimStart('/').TrimStart('\\').Replace("\\", "/");
         }
     }
 }
