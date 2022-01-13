@@ -20,6 +20,13 @@
         label="新建文件夹"
         @click="createFolder"
       />
+      <q-btn
+        class="q-ml-sm"
+        color="primary"
+        :disable="false"
+        label="上传文件"
+        @click="uploadFileModal = true"
+      />
     </template>
     <template v-slot:body-cell-icon="props">
       <q-td :props="props">
@@ -74,6 +81,28 @@
       </q-td>
     </template>
   </q-table>
+
+  <q-dialog v-model="uploadFileModal" persistent>
+    <q-card>
+      <q-toolbar>
+        <q-toolbar-title
+          ><span class="text-weight-bold"
+            >上传到路径 【{{ getCurrentFolder() }}】</span
+          >
+        </q-toolbar-title>
+
+        <q-btn flat round dense icon="close" v-close-popup />
+      </q-toolbar>
+
+      <q-card-section class="q-pt-none">
+        <q-uploader
+          url="http://localhost:4444/upload"
+          class="col-12"
+          style="min-width: 300px"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script lang="ts">
@@ -148,6 +177,11 @@ export default defineComponent({
     await this.refresh();
   },
   methods: {
+    uploadFile: function () {
+      console.log('upload file');
+      const currentFolder = this.getCurrentFolder();
+      this.quasar.dialog({});
+    },
     createFolder: function () {
       console.log('create folder.');
       const currentFolder = this.getCurrentFolder();
@@ -279,6 +313,7 @@ export default defineComponent({
         rowsPerPage: 0, // 0 means all rows
       },
       quasar,
+      uploadFileModal: ref(false),
     };
   },
 });
