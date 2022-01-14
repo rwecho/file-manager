@@ -30,16 +30,16 @@
     </template>
     <template v-slot:body-cell-icon="props">
       <q-td :props="props">
-        <div v-if="props.row.type == 0">
+        <div v-if="props.row.fileType == 0">
           <a
-            :href="`/FileManager/GetFile?path=${encodeURIComponent(
+            :href="`/FileManager/DownloadFile?path=${encodeURIComponent(
               props.row.path
             )}`"
           >
             <q-icon name="fas fa-file" />
           </a>
         </div>
-        <div v-else-if="props.row.type == 1">
+        <div v-else-if="props.row.fileType == 1">
           <router-link
             v-bind:to="`?path=${props.row.path}`"
             tag="button"
@@ -60,16 +60,16 @@
     </template>
     <template v-slot:body-cell-name="props">
       <q-td :props="props">
-        <div v-if="props.row.type == 0">
+        <div v-if="props.row.fileType == 0">
           <a
-            :href="`/FileManager/GetFile?path=${encodeURIComponent(
+            :href="`/FileManager/DownloadFile?path=${encodeURIComponent(
               props.row.path
             )}`"
           >
             {{ props.value }}
           </a>
         </div>
-        <div v-else-if="props.row.type == 1">
+        <div v-else-if="props.row.fileType == 1">
           <router-link
             v-bind:to="`?path=${props.row.path}`"
             tag="button"
@@ -83,7 +83,7 @@
   </q-table>
 
   <q-dialog v-model="uploadFileModal" persistent>
-    <q-card>
+    <q-card class="full-width">
       <q-toolbar>
         <q-toolbar-title
           ><span class="text-weight-bold"
@@ -103,6 +103,12 @@
             filled
             label="待上传的文件"
           />
+          <q-banner class="{1:bg-primary text-white}">
+            curl -X 'POST' \
+            'http://localhost:5115/FileManager/UploadFile?path=%2F' \ -H
+            'accept: */*' \ -H 'Content-Type: multipart/form-data' \ -F
+            'file=@settings.json;type=application/json'
+          </q-banner>
           <div class="row">
             <q-space />
             <q-btn
@@ -121,7 +127,7 @@
 <script lang="ts">
 import { fileManagerService } from 'src/services/file-manager';
 import { defineComponent, onMounted, onBeforeMount, ref } from 'vue';
-import * as filesize from 'filesize';
+import filesize from 'filesize';
 import { ensureEndWithout, normalizePath } from 'boot/string-utilities';
 import { useQuasar } from 'quasar';
 
@@ -132,7 +138,6 @@ const columns = [
     label: 'Type',
     align: 'left' as const,
     field: 'type',
-
     sortable: true,
   },
   {
@@ -180,7 +185,7 @@ interface Row {
   length: number;
   creationTime: Date;
   lastWriteTime: Date;
-  type: FileType;
+  fileType: FileType;
 }
 
 const rows = ref<Row[]>([]);
@@ -213,7 +218,7 @@ export default defineComponent({
         length: fileDto.length,
         creationTime: fileDto.creationTimeUtc,
         lastWriteTime: fileDto.lastWriteTimeUtc,
-        type: FileType.file,
+        fileType: FileType.file,
       });
       this.quasar.loading.hide();
     },
@@ -244,7 +249,7 @@ export default defineComponent({
                   length: 0,
                   creationTime: folder.creationTimeUtc,
                   lastWriteTime: folder.lastWriteTimeUtc,
-                  type: FileType.folder,
+                  fileType: FileType.folder,
                 });
               }))();
         });
@@ -254,14 +259,8 @@ export default defineComponent({
       if (length == 0) {
         return '--';
       }
-      return filesize.default(length);
+      return filesize(length);
     },
-
-    gotoFolder: async function (folderPath: string) {
-      // the arrow function without this in scope.
-      await this.$router.push({ path: '/', query: { path: folderPath } });
-    },
-
     getCurrentFolder: function () {
       const path = this.$route.query.path;
       const folderPath = (Array.isArray(path) ? path[0] : path)?.toString();
@@ -286,7 +285,7 @@ export default defineComponent({
         '/'
       );
       let parentPath = currentPath.split('/').slice(0, -1).join('/');
-      parentPath = parentPath || '..';
+      parentPath = parentPath || '/';
       folders = [
         {
           name: '.',
@@ -311,7 +310,7 @@ export default defineComponent({
           length: 0,
           creationTime: o.creationTimeUtc,
           lastWriteTime: o.lastWriteTimeUtc,
-          type: FileType.folder,
+          fileType: FileType.folder,
         })
       );
       files.forEach((o) =>
@@ -321,7 +320,7 @@ export default defineComponent({
           length: o.length,
           creationTime: o.creationTimeUtc,
           lastWriteTime: o.lastWriteTimeUtc,
-          type: FileType.file,
+          fileType: FileType.file,
         })
       );
     },

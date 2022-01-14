@@ -7,11 +7,17 @@ namespace FileManager.Controllers
     public class FileManagerController : ControllerBase
     {
         [HttpGet]
-        public IActionResult GetFileAsync(string path)
+        public IActionResult DownloadFileAsync(string path)
         {
             path = NormailizePath(path);
             var file = Path.Combine(PathUtilities.Uploads, path);
-
+            if (!IsUploadsSubFolder(path))
+            {
+                return this.BadRequest(new
+                {
+                    Message = "非法的文件路径"
+                });
+            }
             if (!System.IO.File.Exists(file))
             {
                 return this.NotFound();
@@ -19,6 +25,36 @@ namespace FileManager.Controllers
 
             var fileName = Path.GetFileName(file);
             return this.PhysicalFile(file, "application/octet-stream", fileName, true);
+        }
+
+        [HttpGet]
+        public IActionResult GetFileAsync(string path)
+        {
+            path = NormailizePath(path);
+            var file = Path.Combine(PathUtilities.Uploads, path);
+            if (!IsUploadsSubFolder(path))
+            {
+                return this.BadRequest(new
+                {
+                    Message = "非法的文件路径"
+                });
+            }
+
+            if (!System.IO.File.Exists(file))
+            {
+                return this.NotFound();
+            }
+            var fileInfo = new FileInfo(file);
+            return this.Ok(new
+            {
+                fileInfo.Name,
+                Path = NormailizePath(Path.GetRelativePath(PathUtilities.Uploads, fileInfo.FullName)),
+                fileInfo.Length,
+                fileInfo.LastWriteTimeUtc,
+                fileInfo.CreationTimeUtc,
+                fileInfo.LastAccessTimeUtc,
+                fileInfo.Extension
+            });
         }
 
 
@@ -36,7 +72,10 @@ namespace FileManager.Controllers
                     Message = "路径不存在"
                 });
             }
-
+            if (!IsUploadsSubFolder(directory))
+            {
+                directory = PathUtilities.Uploads;
+            }
             var files = Directory.GetFiles(directory);
 
             var dtos = files
