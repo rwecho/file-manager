@@ -62,4 +62,19 @@ export const fileManagerService = {
     const response = await api.get<FileDto>(`FileManager/GetFile?path=${path}`);
     return response.data;
   },
+
+  uploadFile: async (path: string, file: File): Promise<FileDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<FileDto>(
+      `FileManager/UploadFile?path=${path}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
 };

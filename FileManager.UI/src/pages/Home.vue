@@ -95,11 +95,24 @@
       </q-toolbar>
 
       <q-card-section class="q-pt-none">
-        <q-uploader
-          url="http://localhost:4444/upload"
-          class="col-12"
-          style="min-width: 300px"
-        />
+        <q-form @submit="onSubmitUpload" class="q-gutter-md">
+          <q-file
+            clearable
+            name="poster_file"
+            v-model="fileToUpload"
+            filled
+            label="待上传的文件"
+          />
+          <div class="row">
+            <q-space />
+            <q-btn
+              label="上传"
+              type="submit"
+              color="primary"
+              :disabled="fileToUpload === null"
+            />
+          </div>
+        </q-form>
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -177,10 +190,32 @@ export default defineComponent({
     await this.refresh();
   },
   methods: {
-    uploadFile: function () {
-      console.log('upload file');
+    onSubmitUpload: async function () {
+      console.log('submit files');
+      if (!this.fileToUpload) {
+        return;
+      }
+
+      this.quasar.loading.show({
+        delay: 400,
+        message: '正在上传文件中... 请等待',
+      });
       const currentFolder = this.getCurrentFolder();
-      this.quasar.dialog({});
+      const fileDto = await fileManagerService.uploadFile(
+        currentFolder,
+        this.fileToUpload
+      );
+      this.fileToUpload = undefined;
+      this.uploadFileModal = !this.uploadFileModal;
+      rows.value.push({
+        name: fileDto.name,
+        path: fileDto.path,
+        length: fileDto.length,
+        creationTime: fileDto.creationTimeUtc,
+        lastWriteTime: fileDto.lastWriteTimeUtc,
+        type: FileType.file,
+      });
+      this.quasar.loading.hide();
     },
     createFolder: function () {
       console.log('create folder.');
@@ -314,6 +349,7 @@ export default defineComponent({
       },
       quasar,
       uploadFileModal: ref(false),
+      fileToUpload: ref<File | undefined>(undefined),
     };
   },
 });

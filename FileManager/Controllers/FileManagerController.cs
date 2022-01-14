@@ -193,7 +193,8 @@ namespace FileManager.Controllers
 
                 using var srouceStream = file.OpenReadStream();
                 await srouceStream.CopyToAsync(destinationStream);
-                return this.Ok();
+
+                return this.GetFileAsync(destinationFileName);
             }
             catch (IOException exception)
             {
